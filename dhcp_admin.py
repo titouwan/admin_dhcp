@@ -17,7 +17,7 @@ app = Flask(__name__)
 ###### INIT App 
 app = Flask(__name__)
 app.secret_key = 'A0ZrAdcs&*sc45#$^s6:w32rf3c7$8ew68fwqERGFeRHnbm3(*23bb@#$%'
-DATABASE = '/var/lib/sqlite3/dhcp_admin.db'
+DATABASE = '/var/lib/sqlite3/dhcp_admin/dhcp_admin.db'
 
 ###### Roles
 app.config['USERNAME_ro'] = 'ro'
@@ -38,6 +38,7 @@ def get_db():
 def query_db(query, args=(), one=False):
     cur = get_db().execute(query, args)
     rv = cur.fetchall()
+    get_db().commit()
     cur.close()
     return (rv[0] if rv else None) if one else rv
 
@@ -113,17 +114,35 @@ def add():
     if 'logged_rw_in' in session or 'logged_adm_in' in session:
         if request.method == 'POST':
             # push query, return result
-            #new_entry = (
-            #    (request.form['subnet'], request.form['suffix'], request.form['mac'], request.form['name'], request.form['wifi'])
-            #)
             new_entry = (
-                (200,200,'00:00:00:00:00','toto',1) 
+                (request.form['subnet'], request.form['suffix'], request.form['mac'], request.form['name'], request.form['wifi'])
             )
-            result = query_db('INSERT INTO computers(subnet,sufix,id_user,mac,name,wifi) VALUES(200,1,1,"00:11:22:33:44:55","paris",0)') 
+            result = query_db('INSERT INTO computers(subnet,sufix,id_user,mac,name,wifi) VALUES(?,?,1,?,?,?)', new_entry) 
+
+            if 'logged_rw_in' in session:
+                role = 'rw'
+            elif 'logged_adm_in' in session:
+                role = 'admin'
+            else:
+                role = 'None'
+
+            current_user = (
+                (request.environ['REMOTE_ADDR'], role, 'ADD toto')
+            )
+            result = query_db('INSERT INTO logs(from_ip,role,query) VALUES(?,?,?)', current_user)
+
             return redirect(url_for('view'))
         else:
             # print form
             return render_template('add.html')
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/del/<int:entry_id>')
+def delete(entry_id):
+    if 'logged_ro_in' in session or 'logged_rw_in' in session or 'logged_adm_in' in session:
+        result = query_db('DELETE FROM computers WHERE id_comp = ?', [entry_id], one=True)
+        return redirect(url_for('view'))
     else:
         return redirect(url_for('login'))
 
