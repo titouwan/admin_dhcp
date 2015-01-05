@@ -126,10 +126,10 @@ def add():
             else:
                 role = 'None'
 
-            current_user = (
-                (request.environ['REMOTE_ADDR'], role, 'ADD toto')
+            action_user = (
+                (request.environ['REMOTE_ADDR'], role, 'ADD', 'infos non fournies')
             )
-            result = query_db('INSERT INTO logs(from_ip,role,query) VALUES(?,?,?)', current_user)
+            result = query_db('INSERT INTO logs(from_ip,role,action,query) VALUES(?,?,?,?)', action_user)
 
             return redirect(url_for('view'))
         else:
@@ -141,7 +141,22 @@ def add():
 @app.route('/del/<int:entry_id>')
 def delete(entry_id):
     if 'logged_ro_in' in session or 'logged_rw_in' in session or 'logged_adm_in' in session:
+
+        result = query_db('SELECT * FROM computers where id_comp = ?', [entry_id], one=True)
         result = query_db('DELETE FROM computers WHERE id_comp = ?', [entry_id], one=True)
+
+        if 'logged_rw_in' in session:
+            role = 'rw'
+        elif 'logged_adm_in' in session:
+            role = 'admin'
+        else:
+            role = 'None'
+
+        action_user = (
+                (request.environ['REMOTE_ADDR'], role, 'DELETE', 'infos non fournies')
+        )
+
+        result = query_db('INSERT INTO logs(from_ip,role,action,query) VALUES(?,?,?,?)', action_user)
         return redirect(url_for('view'))
     else:
         return redirect(url_for('login'))
