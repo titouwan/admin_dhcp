@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="jumbo">
+  {% if session.logged_adm_in or session.logged_rw_in or session.logged_ro_in %}
+  <h3>Search</h3>
+  {% else %}
+  <h3>Wrong Profile</h3> 
+  {% endif %}
+  </div>
+{% endblock %}
+

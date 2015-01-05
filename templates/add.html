@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="jumbo">
+  {% if session.logged_adm_in or session.logged_rw_in %}
+  <h3>Add Entry</h3>
+
+  <div class="form">
+    <form action="" method="post" name="add_entry">
+    <table style="width:100%" align="center">
+    <tr>
+      <td>Nom PC :</td>
+      <td><input type="text" name="name"></td>
+    </tr>
+    <tr>
+      <td>MAC Addr :</td>
+      <td><input type="text" name="mac"></td>
+    </tr>
+    <tr>
+      <td>Subnet :</td>
+      <td><input type="text" name="subnet"></td>
+    </tr>
+    <tr>
+      <td>Suffix :</td>
+      <td><input type="text" name="suffix"></td>
+    </tr>
+    <tr>
+      <td>User :</td>
+      <td><input type="text" name="user"></td>
+    </tr>
+    <tr>
+      <td>Wifi :</td>
+      <td><input type="checkbox" name="wifi" checked /></td>
+    </tr>
+    <tr>
+      <td align=right><input type="submit" value="Add"></td>
+    </tr>
+    </form>
+  </div>
+  {% else %}
+  <h3>Wrong Profile</h3> 
+  {% endif %}
+  </div>
+{% endblock %}
+

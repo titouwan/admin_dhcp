@@ -1,0 +1,156 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: #444;
+}
+ 
+/*
+ *  * Create dark grey header with a white logo
+ *   */
+  
+header {
+  background-color: #2B2B2B;
+  height: 35px;
+  width: 100%;
+  opacity: .9;
+  margin-bottom: 10px;
+}
+ 
+header h1.logo {
+  margin: 0;
+  font-size: 1.7em;
+  color: #fff;
+  text-transform: uppercase;
+  float: left;
+}
+ 
+header h1.logo:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+header h1 a {
+  color: #fff;
+  text-decoration: none;
+}
+
+header h2.profile {
+  color: #fff;
+  font-size: 1em;
+  margin: 0;
+  float: left;
+}
+ 
+/*
+ *  * Center the body content
+ *   */
+  
+.container {
+  width: 940px;
+  margin: 0 auto;
+}
+ 
+div.jumbo {
+  height: 300px;
+  padding: 10px 0 30px 0;
+  background-color: #eeeeee;
+  -webkit-border-radius: 6px;
+     -moz-border-radius: 6px;
+          border-radius: 6px;
+}
+ 
+h2 {
+  font-size: 3em;
+  margin-top: 40px;
+  text-align: center;
+  letter-spacing: -2px;
+}
+ 
+h3 {
+  font-size: 1.7em;
+  font-weight: 100;
+  margin-top: 30px;
+  text-align: center;
+  letter-spacing: -1px;
+  color: #999;
+}
+
+header .menu {
+  float: right;
+  margin-top: 8px;
+}
+ 
+header .menu li {
+  display: inline;
+}
+ 
+header .menu li + li {
+  margin-left: 35px;
+}
+ 
+header .menu li a {
+  color: #999;
+  text-decoration: none;
+}
+
+.menu li {
+  text-decoration: none;
+}
+
+.menu li a {
+  text-decoration: none;
+}
+
+form.form-horizontal {
+  text-align: center;
+}
+
+form.action {
+  text-align: center;
+}
+
+.bouton_stop {
+	padding:6px 0 6px 0;
+	font:Bold 13px Arial;
+	background:#d34836;
+	color:#fff;
+	width:90px;
+	border-radius:2px;
+	border:none;
+}
+
+.bouton_start {
+        padding:6px 0 6px 0;
+        font:Bold 13px Arial;
+        background:#36d348;
+        color:#fff;
+        width:90px;
+        border-radius:2px;
+        border:none;
+}
+
+pre.logs {
+	text-align: left;
+	display: inline-block;
+	text-align: left;
+ font-size: 14px;
+ margin: 0;
+ margin-left: 155px;
+ padding: 0;
+}
+
+div.logs_center {
+	align: center;
+}
+
+table {
+      font-size: 10px;
+}
+
+a.plus {
+	text-decoration: none;
+	color: #000;
+	font:Bold 11px Arial;
+}
+

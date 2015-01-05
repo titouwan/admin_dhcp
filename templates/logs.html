@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="jumbo">
+  {% if session.logged_adm_in %}
+  <h3>Logs</h3>
+    {% if logs %}
+      <table style="width:97%" align=center>
+      {% for log in logs%}
+        <tr>
+          <!--<td>{{ log[0] }}</td>-->
+          <td>{{ log[1] }}:</td>
+          <td align=right>"{{ log[3] }}" role</td>
+          <td>, from {{ log[2] }}</td>
+          <td>, Query: {{ log[4] }}</td>
+        </tr>
+      {% endfor %}
+      </table>
+    {% endif %}
+  {% else %}
+  <h3>Wrong Profile</h3> 
+  {% endif %}
+  </div>
+{% endblock %}
+

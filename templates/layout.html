@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>DHCP Admin</title>   
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <!--<meta http-equiv="refresh" content="10">-->
+  </head>
+  <body>
+   
+    <header>
+      <div class="container">
+        <h1 class="logo"><a href="{{ url_for('home') }}">DHCP</a></h1>
+        {% if session.logged_adm_in %}
+        <h2 class="profile">admin</h2>
+        {% endif %}
+        {% if session.logged_rw_in %}
+        <h2 class="profile">read/write</h2>
+        {% endif %}
+        {% if session.logged_ro_in %}
+        <h2 class="profile">read-only</h2>
+        {% endif %}
+        <strong><nav>
+          <ul class="menu">
+            {% if session.logged_adm_in %}
+            <li><a href="{{ url_for('admin') }}">admin</a></li>
+            <li><a href="{{ url_for('logs') }}">logs</a></li>
+            {% endif %}
+            {% if session.logged_rw_in or session.logged_adm_in %}
+            <li><a href="{{ url_for('add') }}">add</a></li>
+            {% endif %}
+            {% if session.logged_ro_in or session.logged_rw_in or session.logged_adm_in %}
+            <li><a href="{{ url_for('view') }}">view</a></li>
+            <li><a href="{{ url_for('search') }}">search</a></li>
+            <li><a href="{{ url_for('logout') }}">logout</a></li>
+            {% endif %} 
+          </ul>
+        </nav></strong>
+      </div>
+    </header>
+     
+    <div class="container">
+      {% block content %}
+      {% endblock %}
+    </div>
+     
+  </body>
+</html>

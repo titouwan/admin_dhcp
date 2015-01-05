@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="jumbo">
+  {% if session.logged_adm_in %}
+  <h3>Admin</h3>
+  <div id="menu">
+    <ul class="menu">
+        <li class="item"><a href="/admin/push">Push</a></li>
+        <li class="item"><a href="/admin/restart">Restart</a></li>
+        <li class="item"><a href="/admin/export">Export</a></li>
+    </ul>
+  </div>
+  {% if results %}
+  <div class="results">
+    <h4>results</h4>
+
+    <div class="up">
+    <h5>UP</h5>
+      {% for (hostname, result) in results['contacted'].items() %}
+        {% if not 'failed' in result %}
+	  {{ hostname, }} {{ result['stdout'] }} </br>
+        {% endif %}
+      {% endfor %}
+    </div> 
+
+    <div class="failed">
+    <h5>FAILED</h5>
+      {% for (hostname, result) in results['contacted'].items() %}
+        {% if 'failed' in result %}        
+          {{ hostname, }} {{ result['stdout'] }} </br>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="up">
+    <h5>DOWN</h5>
+      {% for (hostname, result) in results['dark'].items() %}
+        {{ hostname, }} {{ result['stdout'] }} </br>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% else %}
+  <h3>Wrong Profile</h3> 
+  {% endif %}
+  </div>
+{% endblock %}
+

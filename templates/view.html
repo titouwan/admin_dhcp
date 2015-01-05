@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="jumbo">
+    {% if session.logged_adm_in or session.logged_rw_in or session.logged_ro_in %}
+    <h3>View</h3>
+      {% if all %}
+        <table style="width:97%" align=center>
+        {% for computer in all%}
+          <tr>
+            <td>{{ computer[1] }}</td>
+            <td>{{ computer[2] }}</td>
+            <td>10.X.{{ computer[3] }}.{{ computer[4] }}</td>
+            <td>{{ computer[5] }}</td>
+            <td>{{ computer[6] }}</td>
+            <td>{{ computer[7] }}</td>
+            <td>{{ computer[8] }}</td>
+            {% if computer[9] == 1 %}
+            <td><img src="{{ url_for('static', filename='img/wifi.png') }}" alt="wifi" height="15" width="15"></td>
+            {% else %}
+            <td></td>
+            {% endif %}
+            <td><a class="plus" href="view/{{ computer[0] }}">+</a></td>
+          </tr>
+        {% endfor %}
+        </table>
+      {% endif %}
+    {% else %}
+    <h3>Wrong Profile</h3> 
+    {% endif %}
+  </div>
+{% endblock %}
+

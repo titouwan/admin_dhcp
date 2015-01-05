@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="jumbo">
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+  <form action="" method=post class="form-horizontal">
+    <h2>Signin</h2>
+    <div class="control-group">
+        <div class="controls">
+          <input class=control type="text" id="username" name="username" class="input-xlarge"
+            placeholder="Enter Username" required>
+        </div>
+    </div>
+ 
+    <div class="control-group">
+        <div class="controls">
+          <input class=control type="password" id="password" name="password" class="input-xlarge"
+            placeholder="Enter Password" required>
+        </div>
+    </div>
+ 
+    <div class="control-group">
+        <div class="controls">
+          <button class=control type="submit" class="btn btn-success">Signin</button>
+        </div>
+    </div>
+  </form>
+  </div>
+{% endblock %}
+
