@@ -15,6 +15,22 @@
       <td>MAC Addr :</td>
       <td><input type="text" name="mac"></td>
     </tr>
+
+    <tr>
+      <td>User :</td><td>
+    {% if userlist %}
+      <select name="user" size="1">
+        {% for user in userlist %}
+          <option name="user" value="{{ user[0] }}">{{ user[1] }} {{ user[2] }}</option>
+        {% endfor %}
+      </SELECT>
+      
+    {% else %}
+      <input type="text" name="user">
+    {% endif %}
+    </td>
+    </tr>
+
     <tr>
       <td>Subnet :</td>
       <td><input type="text" name="subnet"></td>
@@ -24,12 +40,11 @@
       <td><input type="text" name="suffix"></td>
     </tr>
     <tr>
-      <td>User :</td>
-      <td><input type="text" name="user"></td>
-    </tr>
-    <tr>
       <td>Wifi :</td>
-      <td><input type="checkbox" name="wifi" checked /></td>
+      <td>
+        <input type="radio" name="wifi" value="1" checked>Yes
+        <input type="radio" name="wifi" value="0" checked>No
+      </td>
     </tr>
     <tr>
       <td align=right><input type="submit" value="Add"></td>

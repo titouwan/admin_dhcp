@@ -2,6 +2,7 @@
 {% block content %}
   <div class="jumbo">
   {% if session.logged_adm_in %}
+
   <h3>Logs</h3>
     {% if logs %}
       <table style="width:97%" align=center>
@@ -15,8 +16,14 @@
           <td> object: {{ log[5] }}</td>
         </tr>
       {% endfor %}
+
+      {% if lines|int() > limit|int() %}
+        {% set limit = limit|int() + 20 %}
+        <tr><td><a href=?limit={{limit}}>more</a></td></tr>
+      {% endif %}
       </table>
     {% endif %}
+
   {% else %}
   <h3>Wrong Profile</h3> 
   {% endif %}

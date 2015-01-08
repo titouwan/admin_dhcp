@@ -8,6 +8,7 @@
         <li class="item"><a href="/admin/push">Push</a></li>
         <li class="item"><a href="/admin/restart">Restart</a></li>
         <li class="item"><a href="/admin/export">Export</a></li>
+        <li class="item"><a href="/admin/status">Status</a></li>
     </ul>
   </div>
   {% if results %}
@@ -15,7 +16,7 @@
     <h4>results</h4>
 
     <div class="up">
-    <h5>UP</h5>
+    <h5>OK</h5>
       {% for (hostname, result) in results['contacted'].items() %}
         {% if not 'failed' in result %}
 	  {{ hostname, }} {{ result['stdout'] }} </br>

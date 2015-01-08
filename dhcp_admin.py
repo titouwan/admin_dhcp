@@ -7,19 +7,19 @@
 # - Records mac and users associated to each computer (sqlite)
 # - Generate and send (with ansible) dhcp leases files
 #
-############# BEGIN ##############
+############### BEGIN ################
 
 import sqlite3
 import ansible.runner
 from flask import Flask, render_template, request, session, flash, redirect, url_for, g
 app = Flask(__name__)
 
-###### INIT App 
+###### INIT App ######################
 app = Flask(__name__)
 app.secret_key = 'A0ZrAdcs&*sc45#$^s6:w32rf3c7$8ew68fwqERGFeRHnbm3(*23bb@#$%'
 DATABASE = '/var/lib/sqlite3/dhcp_admin/dhcp_admin.db'
 
-###### Roles
+###### Roles #########################
 app.config['USERNAME_ro'] = 'ro'
 app.config['PASSWORD_ro'] = 'inf0t3l!'
 app.config['USERNAME_rw'] = 'dhcp'
@@ -27,7 +27,32 @@ app.config['PASSWORD_rw'] = 'inf0t3l!'
 app.config['USERNAME_adm'] = 'admin'
 app.config['PASSWORD_adm'] = 'inf0t3l!'
 
-###### Functions
+###### Functions #####################
+
+def gen_file():
+    f = open('/tmp/dhcp.out', 'w')
+
+    results = query_db('SELECT c.name,upper(u.LName),upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),c.mac,c.subnet,c.sufix,c.wifi FROM computers as c, users as u where c.id_user = u.id_user')
+
+    for host in results:
+        f.write('Host ' + host[0])
+        if host[6] == 1: 
+            f.write('-WIFI')
+        f.write(' { # ' + host[1] + ' ' + host[2] + '\n')
+        f.write('   hardware ethernet ' + host[3] + '; #\n') 
+        f.write('   fixed-address 10.X.' + str(host[4]) + '.' + str(host[5]) + '; #\n') 
+        f.write('}\n')
+        f.write('\n')
+
+    f.close()
+
+def ansible_run(ansible_module, ansible_modules_args, dom):
+    results = ansible.runner.Runner(
+            pattern=dom, forks=15,
+            remote_user='root',
+            module_name=ansible_module, module_args=ansible_modules_args, private_key_file='/home/ansible/.ssh/id_dsa'
+        ).run()    
+    return results
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -42,16 +67,17 @@ def query_db(query, args=(), one=False):
     cur.close()
     return (rv[0] if rv else None) if one else rv
 
-############# ROUTES #############
+############### ROUTES ###############
 
-######## Globals (all profiles) ########
+####### Globals (all profiles) #######
 
 @app.route('/')
 def home():
+    # am I logged ?
     if 'logged_ro_in' in session or 'logged_rw_in' in session or 'logged_adm_in' in session:
-        #all = query_db('select c.name,c.mac,c.subnet,c.sufix,u.FName,u.LName,s.name_serv,d.name_dir,c.wifi from computers as c, users as u, services as s, directions as d where c.id_user = u.id_user and u.id_serv = s.id_serv and s.id_dir = d.id_dir')
 	all = None
         return render_template('home.html', all=all)
+    # or not !
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET','POST'])
@@ -82,28 +108,34 @@ def logout():
     flash('You were logged out')
     return redirect(url_for('login'))
 
-#### Read-Only available routes ####
+##### Read-Only available routes #####
 
 @app.route('/search')
 def search():
+    # am I logged ?
     if 'logged_ro_in' in session or 'logged_rw_in' in session or 'logged_adm_in' in session:
         return render_template('search.html')
+    # or not !
     else:
         return redirect(url_for('login'))
 
 @app.route('/view')
 def view():
+    # am I logged ?
     if 'logged_ro_in' in session or 'logged_rw_in' in session or 'logged_adm_in' in session:
         all = query_db('SELECT c.id_comp,c.name,c.mac,c.subnet,c.sufix,upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName),s.name_serv,d.name_dir,c.wifi FROM computers as c, users as u, services as s, directions as d where c.id_user = u.id_user and u.id_serv = s.id_serv and s.id_dir = d.id_dir')
         return render_template('view.html', all=all)
+    # or not !
     else:
         return redirect(url_for('login'))
 
 @app.route('/view/<int:entry_id>')
 def view_entry(entry_id):
+    # am I logged ?
     if 'logged_ro_in' in session or 'logged_rw_in' in session or 'logged_adm_in' in session:
         entry = query_db('SELECT c.id_comp,c.name,c.mac,c.subnet,c.sufix,upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName),s.name_serv,d.name_dir,c.wifi FROM computers as c, users as u, services as s, directions as d where c.id_user = u.id_user and u.id_serv = s.id_serv and s.id_dir = d.id_dir and c.id_comp = ?', [entry_id], one=True)
         return render_template('view_entry.html', computer=entry)
+    # or not !
     else:              
         return redirect(url_for('login'))
 
@@ -111,14 +143,24 @@ def view_entry(entry_id):
 
 @app.route('/add', methods=['GET','POST'])
 def add():
+    # am I logged ?
     if 'logged_rw_in' in session or 'logged_adm_in' in session:
         if request.method == 'POST':
+            subnet = request.form['subnet'] or 0
+            suffix = request.form['suffix'] or 0
+            mac = request.form['mac'] or "00:00:00:00:00:00"
+            user = request.form['user'] or 1
+            name = request.form['name'] or "toto"
+            wifi = request.form['wifi'] or 0
+
+
             # push query, return result
             new_entry = (
-                (request.form['subnet'], request.form['suffix'], request.form['mac'], request.form['name'], request.form['wifi'])
+                (subnet, suffix, mac, user, name, wifi)
             )
-            result = query_db('INSERT INTO computers(subnet,sufix,id_user,mac,name,wifi) VALUES(?,?,1,?,?,?)', new_entry) 
+            result = query_db('INSERT INTO computers(subnet,sufix,mac,id_user,name,wifi) VALUES(?,?,?,?,?,?)', new_entry) 
 
+            # who am I ? (for logging infos)
             if 'logged_rw_in' in session:
                 role = 'rw'
             elif 'logged_adm_in' in session:
@@ -126,25 +168,39 @@ def add():
             else:
                 role = 'None'
 
+            username = query_db('SELECT upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName) FROM users as u WHERE u.id_user = ?', str(user), one=True) 
+            query_info = "10.X." + str(new_entry[0]) + "." + str(new_entry[1]) + " // " + new_entry[2] + " // " + username[0] + " " + username[1] + " // " + new_entry[4] + " // " + str(new_entry[5])
+
+            # build logging infos
             action_user = (
-                (request.environ['REMOTE_ADDR'], role, 'ADD', 'infos non fournies')
+                (request.environ['REMOTE_ADDR'], role, 'ADD', query_info)
             )
+
+            # insert logging infos
             result = query_db('INSERT INTO logs(from_ip,role,action,query) VALUES(?,?,?,?)', action_user)
 
+            # redirect to "view"
             return redirect(url_for('view'))
         else:
+            userlist = query_db('SELECT u.id_user,upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName) FROM users as u')
+
             # print form
-            return render_template('add.html')
+            return render_template('add.html', userlist=userlist)
+    # or not !
     else:
         return redirect(url_for('login'))
 
-@app.route('/del/<int:entry_id>')
+@app.route('/del/<int:entry_id>', methods=['GET'])
 def delete(entry_id):
-    if 'logged_ro_in' in session or 'logged_rw_in' in session or 'logged_adm_in' in session:
+    # am I logged ?
+    if 'logged_rw_in' in session or 'logged_adm_in' in session:
 
-        result = query_db('SELECT * FROM computers where id_comp = ?', [entry_id], one=True)
+        # Get infos before delete it
+        comp = query_db('SELECT c.subnet,c.sufix,upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName),c.mac,c.name,c.wifi FROM computers as c, users as u where u.id_user = c.id_user and id_comp = ?', [entry_id], one=True)
+        # Delete the entry in "computers" table
         result = query_db('DELETE FROM computers WHERE id_comp = ?', [entry_id], one=True)
 
+        # who am I ? (for logging infos)
         if 'logged_rw_in' in session:
             role = 'rw'
         elif 'logged_adm_in' in session:
@@ -152,43 +208,59 @@ def delete(entry_id):
         else:
             role = 'None'
 
+        query_info = "10.X." + str(comp[0]) + "." + str(comp[1]) + " // " + comp[4] + " // " + comp[2] + " " + comp[3] + " // " + comp[5] + " // " + str(comp[6])
+        # build logging infos
         action_user = (
-                (request.environ['REMOTE_ADDR'], role, 'DELETE', 'infos non fournies')
+                (request.environ['REMOTE_ADDR'], role, 'DELETE', query_info)
         )
 
+        # insert logging infos
         result = query_db('INSERT INTO logs(from_ip,role,action,query) VALUES(?,?,?,?)', action_user)
+
+        # redirect to "view"
         return redirect(url_for('view'))
+    # or not !
     else:
         return redirect(url_for('login'))
 
 #### Admin available routes ####
 
-@app.route('/logs')
+@app.route('/logs', methods=['GET'])
 def logs():
+    # am I logged ?
     if 'logged_adm_in' in session:
-        logs = query_db('select * from logs ORDER BY time DESC LIMIT 30;')
-        return render_template('logs.html', logs=logs)
+	limit = request.args.get('limit') or 30
+	lines = query_db('select count(*) FROM logs', one=True) or 0
+
+        logs = query_db('select * from logs ORDER BY time DESC LIMIT ?', [limit])
+        return render_template('logs.html', logs=logs, lines=lines[0], limit=limit)
+    # or not !
     else:              
         return redirect(url_for('login'))
 
 @app.route('/admin')
 def admin():
+    # am I logged ?
     if 'logged_adm_in' in session:
         return render_template('admin.html')
+    # or not !
     else:
         return redirect(url_for('login'))
 
-@app.route('/admin/push')
+@app.route('/admin/push', methods=['GET','POST'])
 def push():
+    # am I logged ?
     if 'logged_adm_in' in session:
-        results = ansible.runner.Runner(
-            pattern='*', forks=10,
-            remote_user='root',
-            module_name='command', module_args='/usr/bin/uptime', private_key_file='/home/ansible/.ssh/id_dsa',
-        ).run()
 
-	if results is None:
-            print "No hosts found"
+        gen_file()
+
+        if request.method == 'POST':
+            dom = request.form['dom'] or 'all'
+	    #results = ansible_run('command', '/usr/bin/uptime', dom)
+            results = ansible_run('copy', 'src=/tmp/dhcp.out dest=/tmp/dhcp.out owner=root group=root mode=0600', dom)
+
+	    if results is None:
+                print "No hosts found"
 
         #for (hostname, result) in results['contacted'].items():
         #    if not 'failed' in result:
@@ -201,31 +273,55 @@ def push():
         #for (hostname, result) in results['dark'].items():
         #    print "%s >>> %s" % (hostname, result)
 	
+            return render_template('admin.html', results=results)
+        else:
+            return render_template('push.html')
+
+    # or not !
+    else:
+        return redirect(url_for('login'))
+
+@app.route('/admin/status')
+def status():
+    # am I logged ?
+    if 'logged_adm_in' in session:
+        results = ansible_run('service', 'name=dhcpd state=started', 'all')
+
+        if results is None:
+            print "No hosts found"
+
         return render_template('admin.html', results=results)
+    # or not !
     else:
         return redirect(url_for('login'))
 
 @app.route('/admin/restart')
 def restart():
+    # am I logged ?
     if 'logged_adm_in' in session:
         results = ""
         return render_template('admin.html', results=results)
+    # or not !
     else:
         return redirect(url_for('login'))
 
 @app.route('/admin/export')
 def export():
+    # am I logged ?
     if 'logged_adm_in' in session:
         results = ""
         return render_template('admin.html', results=results)
+    # or not !
     else:
         return redirect(url_for('login'))
 
 
-##################################
+######################################
 
 if __name__ == '__main__':
+    # No-Prod :
     app.run(debug=True)
+    # Prod :
     #app.run(debug=False,host='0.0.0.0')
 
-############## END ###############
+################ END #################
