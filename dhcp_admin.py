@@ -10,8 +10,9 @@
 ############### BEGIN ################
 
 import sqlite3
+#import csv
 import ansible.runner
-from flask import Flask, render_template, request, session, flash, redirect, url_for, g
+from flask import Flask, render_template, request, session, flash, redirect, url_for, g, make_response
 app = Flask(__name__)
 
 ###### INIT App ######################
@@ -40,7 +41,7 @@ def gen_file():
             f.write('-WIFI')
         f.write(' { # ' + host[1] + ' ' + host[2] + '\n')
         f.write('   hardware ethernet ' + host[3] + '; #\n') 
-        f.write('   fixed-address 10.X.' + str(host[4]) + '.' + str(host[5]) + '; #\n') 
+        f.write('   fixed-address 10.%%.' + str(host[4]) + '.' + str(host[5]) + '; #\n') 
         f.write('}\n')
         f.write('\n')
 
@@ -168,6 +169,7 @@ def add():
             else:
                 role = 'None'
 
+            # retrieve firstname ans lastname to put in the log entry and format it
             username = query_db('SELECT upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName) FROM users as u WHERE u.id_user = ?', str(user), one=True) 
             query_info = "10.X." + str(new_entry[0]) + "." + str(new_entry[1]) + " // " + new_entry[2] + " // " + username[0] + " " + username[1] + " // " + new_entry[4] + " // " + str(new_entry[5])
 
@@ -251,15 +253,18 @@ def admin():
 def push():
     # am I logged ?
     if 'logged_adm_in' in session:
-
-        gen_file()
-
         if request.method == 'POST':
+            gen_file()
+
             dom = request.form['dom'] or 'all'
-	    #results = ansible_run('command', '/usr/bin/uptime', dom)
             results = ansible_run('copy', 'src=/tmp/dhcp.out dest=/tmp/dhcp.out owner=root group=root mode=0600', dom)
 
 	    if results is None:
+                print "No hosts found"
+
+            results = ansible_run('command', 'sed -i \'s/%%/{{ dom }}/\' /tmp/dhcp.out', dom) 
+
+            if results is None:
                 print "No hosts found"
 
         #for (hostname, result) in results['contacted'].items():
@@ -295,22 +300,66 @@ def status():
     else:
         return redirect(url_for('login'))
 
-@app.route('/admin/restart')
+@app.route('/admin/restart', methods=['GET','POST'])
 def restart():
     # am I logged ?
     if 'logged_adm_in' in session:
-        results = ""
-        return render_template('admin.html', results=results)
+        if request.method == 'POST':
+            dom = request.form['dom'] or 'all'
+
+            #results = ansible_run('service', 'name=dhcpd state=started', 'all')
+            results = ansible_run('command', 'uptime', dom)
+
+            if results is None:
+                print "No hosts found"
+
+            return render_template('admin.html', results=results)
+        else:
+            return render_template('restart.html')
     # or not !
     else:
         return redirect(url_for('login'))
 
-@app.route('/admin/export')
+@app.route('/admin/export', methods=['GET','POST'])
 def export():
     # am I logged ?
     if 'logged_adm_in' in session:
-        results = ""
-        return render_template('admin.html', results=results)
+        if request.method == 'POST':
+            if request.form['export_type'] == "csv":
+                # retrieve infos
+                results = query_db('SELECT c.id_comp,c.name,c.mac,c.subnet,c.sufix,upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName),s.name_serv,d.name_dir,c.wifi FROM computers as c, users as u, services as s, directions as d where c.id_user = u.id_user and u.id_serv = s.id_serv and s.id_dir = d.id_dir')
+
+                csv = "ID;Machine;mac;IP;Wifi;Utilisateur;Direction;Service\n"
+
+                for line in results:
+                    wifi = "no"
+                    if line[9] == 1:
+                        wifi = "yes"
+                    csv = csv + str(line[0]) + ';' + line[1] + ';' + line[2] + ';' + '10.XX.' + str(line[3]) + '.' + str(line[4]) + ';' + wifi + ';' + line[6] + ' ' + line[5] + ';' + line[7] + ';' + line[8] + "\n" 
+
+                response = make_response(csv)
+                response.headers["Content-Disposition"] = "attachment;filename=export.csv"
+                return response
+            else:
+                lease = "# /!\ Exported configuration file /!\ \n# Please modify each \"%%\" occurence by the number of the targeted DOM before use\n\n"
+                results = query_db('SELECT c.name,upper(u.LName),upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),c.mac,c.subnet,c.sufix,c.wifi FROM computers as c, users as u where c.id_user = u.id_user')
+   
+                for line in results:
+                    lease = lease + 'Host ' + line[0]
+                    if line[6] == 1:
+                        lease = lease + '-WIFI'
+                    lease = lease + ' { # ' + line[1] + ' ' + line[2] + '\n'
+                    lease = lease + '   hardware ethernet ' + line[3] + '; #\n'
+                    lease = lease + '   fixed-address 10.%%.' + str(line[4]) + '.' + str(line[5]) + '; #\n'
+                    lease = lease + '}\n\n'
+
+                response = make_response(lease)
+                response.headers["Content-Disposition"] = "attachment;filename=export.conf"
+                return response
+
+            return render_template('admin.html')
+        else:
+            return render_template('export.html')
     # or not !
     else:
         return redirect(url_for('login'))

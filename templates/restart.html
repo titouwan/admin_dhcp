@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="jumbo">
+  {% if session.logged_adm_in %}
+  <h3>Admin</h3>
+  <div id="menu">
+    <ul class="menu">
+        <li class="item"><a href="/admin/push">Push</a></li>
+        <li class="item"><a href="/admin/restart">Restart</a></li>
+        <li class="item"><a href="/admin/export">Export</a></li>
+        <li class="item"><a href="/admin/status">Status</a></li>
+    </ul>
+  </div>
+  <div class="results">
+    <form action="restart" method="post" name="restart_service">
+      <table style="width:100%" align="center">
+        <tr><td><input type="radio" name="dom" value="all" checked>ALL</td></tr>
+        <tr><td><input type="radio" name="dom" value="th2">TH2</td></tr>
+        <tr><td><input type="radio" name="dom" value="gpe">GPE</td></tr>
+        <tr><td><input type="radio" name="dom" value="mtq">MTQ</td></tr>
+        <tr><td><input type="radio" name="dom" value="guy">GUY</td></tr>
+        <tr><td><input type="radio" name="dom" value="reu">REU</td></tr>
+        <tr><td><input type="radio" name="dom" value="may">MAY</td></tr>
+        <tr><td><input type="radio" name="dom" value="mau">MAU</td></tr>
+        <tr>
+          <td align=right><input type="submit" value="Restart"></td>
+        </tr>
+      </table>
+    </form>
+
+  </div>
+  {% else %}
+  <h3>Wrong Profile</h3> 
+  {% endif %}
+  </div>
+{% endblock %}
+
