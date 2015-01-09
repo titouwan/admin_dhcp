@@ -3,6 +3,15 @@
   <div class="jumbo">
     {% if session.logged_adm_in or session.logged_rw_in or session.logged_ro_in %}
     <h3>View</h3>
+      {% with messages = get_flashed_messages() %}
+        {% if messages %}
+          <ul class=flashes>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
       {% if all %}
         <table style="width:97%" align=center>
         {% for computer in all%}
@@ -20,10 +29,20 @@
             <td></td>
             {% endif %}
             <td><a class="plus" href="view/{{ computer[0] }}">+</a></td>
-            <td><a class="plus" href="del/{{ computer[0] }}">x</a></td>
+            {% if session.logged_adm_in or session.logged_rw_in %}
+              <td><a class="plus" href="del/{{ computer[0] }}">x</a></td>
+            {% endif %}
           </tr>
         {% endfor %}
         </table>
+
+        {% if session.logged_adm_in or session.logged_rw_in %}
+          <form action="push" method="post" name="push_conf">
+            <input type="hidden" name="dom" value="all">
+            <input type="submit" value="Push">
+          </form>
+        {% endif %}
+
       {% endif %}
     {% else %}
     <h3>Wrong Profile</h3> 

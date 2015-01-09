@@ -10,7 +10,8 @@
 ############### BEGIN ################
 
 import sqlite3
-#import csv
+import re
+import logging
 import ansible.runner
 from flask import Flask, render_template, request, session, flash, redirect, url_for, g, make_response
 app = Flask(__name__)
@@ -87,15 +88,15 @@ def login():
     if request.method == 'POST':
         if request.form['username'] == app.config['USERNAME_ro'] and request.form['password'] == app.config['PASSWORD_ro']:
             session['logged_ro_in'] = True
-            flash('You were logged in read-only profile')
+            #flash('You were logged in read-only profile')
             return redirect(url_for('home'))
         elif request.form['username'] == app.config['USERNAME_rw'] and request.form['password'] == app.config['PASSWORD_rw']:
             session['logged_rw_in'] = True
-            flash('You were logged in read-write profile')
+            #flash('You were logged in read-write profile')
             return redirect(url_for('home'))
         elif request.form['username'] == app.config['USERNAME_adm'] and request.form['password'] == app.config['PASSWORD_adm']:
             session['logged_adm_in'] = True
-            flash('You were logged in admin profile')
+            #flash('You were logged in admin profile')
             return redirect(url_for('home'))
 	else:
             error = 'Invalid credentials'
@@ -106,7 +107,7 @@ def logout():
     session.pop('logged_ro_in', None)
     session.pop('logged_rw_in', None)
     session.pop('logged_adm_in', None)
-    flash('You were logged out')
+    #flash('You were logged out')
     return redirect(url_for('login'))
 
 ##### Read-Only available routes #####
@@ -154,12 +155,20 @@ def add():
             name = request.form['name'] or "toto"
             wifi = request.form['wifi'] or 0
 
+            # Verifu=y that mac is in correct format
+            a = re.compile("^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$")
+	    if not a.match(mac):
+                flash('Wrong mac address format')
+                return redirect(url_for('view'))
 
-            # push query, return result
-            new_entry = (
-                (subnet, suffix, mac, user, name, wifi)
-            )
-            result = query_db('INSERT INTO computers(subnet,sufix,mac,id_user,name,wifi) VALUES(?,?,?,?,?,?)', new_entry) 
+            # Verify if Mac, IP are already registered
+            results = query_db('SELECT DISTINCT id_comp FROM (SELECT id_comp FROM computers WHERE subnet = ? and sufix = ? UNION ALL SELECT id_comp FROM computers WHERE mac = ?)', (subnet, suffix, mac))
+
+            #app.logger.info(mac)
+            if not results:
+                results = query_db('INSERT INTO computers(subnet,sufix,mac,id_user,name,wifi) VALUES(?,?,?,?,?,?)', (subnet, suffix, mac, user, name, wifi)) 
+            else:
+                flash('IP, mac or name is already registered')
 
             # who am I ? (for logging infos)
             if 'logged_rw_in' in session:
@@ -171,7 +180,7 @@ def add():
 
             # retrieve firstname ans lastname to put in the log entry and format it
             username = query_db('SELECT upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName) FROM users as u WHERE u.id_user = ?', str(user), one=True) 
-            query_info = "10.X." + str(new_entry[0]) + "." + str(new_entry[1]) + " // " + new_entry[2] + " // " + username[0] + " " + username[1] + " // " + new_entry[4] + " // " + str(new_entry[5])
+            query_info = "10.X." + str(subnet) + "." + str(suffix) + " // " + mac + " // " + username[0] + " " + username[1] + " // " + name + " // " + str(wifi)
 
             # build logging infos
             action_user = (
@@ -249,23 +258,21 @@ def admin():
     else:
         return redirect(url_for('login'))
 
+@app.route('/push', methods=['GET','POST'])
 @app.route('/admin/push', methods=['GET','POST'])
 def push():
     # am I logged ?
-    if 'logged_adm_in' in session:
+    if 'logged_rw_in' in session or 'logged_adm_in' in session:
         if request.method == 'POST':
             gen_file()
 
             dom = request.form['dom'] or 'all'
-            results = ansible_run('copy', 'src=/tmp/dhcp.out dest=/tmp/dhcp.out owner=root group=root mode=0600', dom)
 
-	    if results is None:
-                print "No hosts found"
+            if 'logged_rw_in' in session:
+                dom = 'all'
 
+            result_push = ansible_run('copy', 'src=/tmp/dhcp.out dest=/tmp/dhcp.out owner=root group=root mode=0600', dom)
             results = ansible_run('command', 'sed -i \'s/%%/{{ dom }}/\' /tmp/dhcp.out', dom) 
-
-            if results is None:
-                print "No hosts found"
 
         #for (hostname, result) in results['contacted'].items():
         #    if not 'failed' in result:
@@ -278,7 +285,22 @@ def push():
         #for (hostname, result) in results['dark'].items():
         #    print "%s >>> %s" % (hostname, result)
 	
-            return render_template('admin.html', results=results)
+            if 'logged_adm_in' in session:
+                return render_template('admin.html', results=results)
+            else:
+                count = 0
+                for (hostname, result) in result_push['contacted'].items():
+                    if 'failed' in result:
+                        count += 1
+                for (hostname, result) in result_push['dark'].items():
+                    count += 1
+
+                if count == 0:
+                    flash('Files successfully pushed to remote server')
+                else:
+                    flash('One or more push went wrong')
+
+                return redirect(url_for('view'))
         else:
             return render_template('push.html')
 
