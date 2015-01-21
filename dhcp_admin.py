@@ -1,7 +1,5 @@
 #!/var/www/dhcp/venv/bin/python
 #
-# Antoine LOISEAU <a.loiseau@outremer-telecom.fr>
-#
 # DHCP Admin Application - control and manage OMT dhcp servers
 #
 # - Records mac and users associated to each computer (sqlite)
@@ -23,11 +21,11 @@ DATABASE = '/var/lib/sqlite3/dhcp_admin/dhcp_admin.db'
 
 ###### Roles #########################
 app.config['USERNAME_ro'] = 'ro'
-app.config['PASSWORD_ro'] = 'inf0t3l!'
+app.config['PASSWORD_ro'] = 'not'
 app.config['USERNAME_rw'] = 'dhcp'
-app.config['PASSWORD_rw'] = 'inf0t3l!'
+app.config['PASSWORD_rw'] = 'not'
 app.config['USERNAME_adm'] = 'admin'
-app.config['PASSWORD_adm'] = 'inf0t3l!'
+app.config['PASSWORD_adm'] = 'not'
 
 ###### Functions #####################
 
@@ -152,14 +150,16 @@ def add():
             suffix = request.form['suffix'] or 0
             mac = request.form['mac'] or "00:00:00:00:00:00"
             user = request.form['user'] or 1
-            name = request.form['name'] or "toto"
+            name = request.form['name'] or "<default>"
             wifi = request.form['wifi'] or 0
+
+            userlist = query_db('SELECT u.id_user,upper(substr(u.FName,1,1))||lower(substr(u.FName,2)),upper(u.LName) FROM users as u')
 
             # Verifu=y that mac is in correct format
             a = re.compile("^([0-9A-F]{2}[:-]){5}([0-9A-F]{2})$")
 	    if not a.match(mac):
                 flash('Wrong mac address format')
-                return redirect(url_for('view'))
+                return render_template('add.html', userlist=userlist,subnet=subnet,suffix=suffix,mac=mac,user=user,name=name,wifi=wifi)
 
             # Verify if Mac, IP are already registered
             results = query_db('SELECT DISTINCT id_comp FROM (SELECT id_comp FROM computers WHERE subnet = ? and sufix = ? UNION ALL SELECT id_comp FROM computers WHERE mac = ?)', (subnet, suffix, mac))
@@ -169,6 +169,7 @@ def add():
                 results = query_db('INSERT INTO computers(subnet,sufix,mac,id_user,name,wifi) VALUES(?,?,?,?,?,?)', (subnet, suffix, mac, user, name, wifi)) 
             else:
                 flash('IP, mac or name is already registered')
+                return render_template('add.html', userlist=userlist,subnet=subnet,suffix=suffix,mac=mac,user=user,name=name,wifi=wifi)
 
             # who am I ? (for logging infos)
             if 'logged_rw_in' in session:
@@ -386,6 +387,15 @@ def export():
     else:
         return redirect(url_for('login'))
 
+@app.route('/admin/lan', methods=['GET','POST'])
+def lan():
+    # am I logged ?
+    if 'logged_adm_in' in session:
+        subnets = query_db('SELECT s.id_subnet,s.subnet,dis.id_dir from subnets as s, dir_in_subnets as dis GROUP BY s.id_subnet')
+        directions = query_db('SELECT * from directions')
+        return render_template('lan.html', subnets=subnets, directions=directions)
+    else:
+        return redirect(url_for('login'))
 
 ######################################
 

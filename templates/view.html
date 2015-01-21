@@ -3,47 +3,49 @@
   <div class="jumbo">
     {% if session.logged_adm_in or session.logged_rw_in or session.logged_ro_in %}
     <h3>View</h3>
-      {% with messages = get_flashed_messages() %}
-        {% if messages %}
-          <ul class=flashes>
-          {% for message in messages %}
-            <li>{{ message }}</li>
-          {% endfor %}
-          </ul>
-        {% endif %}
-      {% endwith %}
-      {% if all %}
-        <table style="width:97%" align=center>
-        {% for computer in all%}
-          <tr>
-            <td>{{ computer[1] }}</td>
-            <td>{{ computer[2] }}</td>
-            <td>10.X.{{ computer[3] }}.{{ computer[4] }}</td>
-            <td>{{ computer[5] }}</td>
-            <td>{{ computer[6] }}</td>
-            <td>{{ computer[7] }}</td>
-            <td>{{ computer[8] }}</td>
-            {% if computer[9] == 1 %}
-            <td><img src="{{ url_for('static', filename='img/wifi.png') }}" alt="wifi" height="15" width="15"></td>
-            {% else %}
-            <td></td>
-            {% endif %}
-            <td><a class="plus" href="view/{{ computer[0] }}">+</a></td>
-            {% if session.logged_adm_in or session.logged_rw_in %}
-              <td><a class="plus" href="del/{{ computer[0] }}">x</a></td>
-            {% endif %}
-          </tr>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class=flashes>
+        {% for message in messages %}
+          <li>{{ message }}</li>
         {% endfor %}
-        </table>
-
-        {% if session.logged_adm_in or session.logged_rw_in %}
-          <form action="push" method="post" name="push_conf">
-            <input type="hidden" name="dom" value="all">
-            <input type="submit" value="Push">
-          </form>
-        {% endif %}
-
+        </ul>
       {% endif %}
+    {% endwith %}
+
+    {% if all %}
+      <table style="width:97%" align=center>
+      {% for computer in all%}
+        <tr>
+          <td>{{ computer[1] }}</td>
+          <td>{{ computer[2] }}</td>
+          <td>10.X.{{ computer[3] }}.{{ computer[4] }}</td>
+          <td>{{ computer[5] }}</td>
+          <td>{{ computer[6] }}</td>
+          <td>{{ computer[7] }}</td>
+          <td>{{ computer[8] }}</td>
+          {% if computer[9] == 1 %}
+            <td><img src="{{ url_for('static', filename='img/wifi.png') }}" alt="wifi" height="15" width="15"></td>
+          {% else %}
+            <td></td>
+          {% endif %}
+          <td><a class="plus" href="view/{{ computer[0] }}">+</a></td>
+          {% if session.logged_adm_in or session.logged_rw_in %}
+            <td><a class="plus" href="del/{{ computer[0] }}">x</a></td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+      </table>
+
+      {% if session.logged_adm_in or session.logged_rw_in %}
+        <form action="push" method="post" name="push_conf">
+          <input type="hidden" name="dom" value="all">
+          <input type="submit" value="Push">
+        </form>
+      {% endif %}
+
+    {% endif %}
     {% else %}
     <h3>Wrong Profile</h3> 
     {% endif %}

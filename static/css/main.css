@@ -154,3 +154,8 @@ a.plus {
 	font:Bold 11px Arial;
 }
 
+div.flash {
+  background-color: #FBB0B0;
+  padding: 10px;
+  width: 400px;
+}
